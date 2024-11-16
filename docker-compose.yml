@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  postgis:
+    image: postgis/postgis:latest
+    container_name: postgis
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: kyjohnso
+      POSTGRES_PASSWORD: Password
+      POSTGRES_DB: minecraftindex
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+
+  # Python Service for Long-Running Script
+  skyfield_sats:
+    build:
+      context: ./skyfield_sats  # Path to the Python Dockerfile
+    container_name: skyfield_sats
+    depends_on:
+      - postgis  # Ensure PostGIS starts first
+    environment:
+      POSTGRES_USER: yourusername
+      POSTGRES_PASSWORD: yourpassword
+      POSTGRES_DB: yourdatabase
+      POSTGRES_HOST: postgis  # Service name used for networking
+    restart: always  # Restart automatically if the container fails
+ 
+
+volumes:
+  postgis_data:
+

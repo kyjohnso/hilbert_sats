@@ -1,0 +1,14 @@
+# Virtual environment directory
+venv/
+
+# notebook checkpoints
+.ipynb_checkpoints
+
+# gp.php files
+gp.php
+
+# Python cache
+__pycache__
+
+# Docker container logs
+logs/

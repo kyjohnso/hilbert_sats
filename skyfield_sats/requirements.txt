@@ -1,0 +1,4 @@
+numpy
+skyfield
+psycopg2-binary
+hilbertcurve
