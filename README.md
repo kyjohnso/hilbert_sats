@@ -9,10 +9,6 @@ This repository explores the use of **Hilbert Curves** to index geospatial satel
 
 Satellites in Earth's orbit generate massive amounts of positional data that require efficient management and querying. **[Hilbert Curves](https://en.wikipedia.org/wiki/Hilbert_curve)** are fractal space-filling curves that enable spatial locality, making them ideal for indexing multidimensional data like geospatial coordinates.
 
-![Hilbert Curve](https://en.wikipedia.org/wiki/Hilbert_curve#/media/File:Hilbert3d-step3.png)
-
-Image source: https://en.wikipedia.org/wiki/Hilbert_curve#/media/File:Hilbert3d-step3.png 
-
 This repository is an experiment to:
 - Explore Hilbert Curves as an indexing technique for geospatial data,
 - Demonstrate their potential fast geometric based indexing into massive datasets (>1e9 records),
