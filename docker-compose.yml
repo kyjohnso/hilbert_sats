@@ -14,10 +14,10 @@ services:
       - postgis_data:/var/lib/postgresql/data
 
   # Python Service for Long-Running Script
-  skyfield_sats:
+  insert_satellites:
     build:
-      context: ./skyfield_sats  # Path to the Python Dockerfile
-    container_name: skyfield_sats
+      context: ./insert_satellites  # Path to the Python Dockerfile
+    container_name: insert_satellites
     depends_on:
       - postgis  # Ensure PostGIS starts first
     environment:
