@@ -333,6 +333,11 @@ if __name__ == "__main__":
     # Load configuration from YAML
     config = load_config_from_yaml(args.config)
 
+    conn = connect_to_db(config["postgis"])
+    create_satellites_table(conn)
+    create_hilbert_points_table(conn)
+    conn.close()
+
     last_run_dt = datetime.datetime(2001,5,31).replace(tzinfo=datetime.UTC) # clint eastwoods birthday in 2001
     while True:
         now = datetime.datetime.now(datetime.UTC)
