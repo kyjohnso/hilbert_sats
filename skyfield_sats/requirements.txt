@@ -1,4 +1,5 @@
 numpy
+pyyaml
 skyfield
 psycopg2-binary
 hilbertcurve

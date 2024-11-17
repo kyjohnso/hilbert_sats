@@ -1,0 +1,13 @@
+hilbert:
+  cell_size: 100000
+  n: 3
+  world_size: 80000000
+postgis:
+  dbname: minecraftindex
+  host: postgis
+  password: Password
+  port: 5432
+  user: kyjohnso
+satellite:
+  query_interval_seconds: 10
+  tle_url: https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle

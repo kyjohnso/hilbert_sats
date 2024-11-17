@@ -1,13 +1,15 @@
-from skyfield.api import load
-from skyfield.api import wgs84
-import logging 
-import time
-import numpy as np
-from hilbertcurve.hilbertcurve import HilbertCurve
-import psycopg2
-import sys
+import argparse
+import logging
 import os
-from datetime import datetime
+import sys
+import time
+import datetime
+
+import numpy as np
+import psycopg2
+import yaml
+from hilbertcurve.hilbertcurve import HilbertCurve
+from skyfield.api import load, wgs84
 
 # Configure logging
 logging.basicConfig(
@@ -22,7 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Load TLE data
-def get_starlink_satellites(url="https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle"):
+def get_satellites(url="https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle"):
     logger.info("Loading TLE data...")
     satellites = load.tle_file(url)
     satellites = [{"sat":s} for s in satellites]
@@ -30,15 +32,23 @@ def get_starlink_satellites(url="https://celestrak.org/NORAD/elements/gp.php?GRO
     return satellites
 
 # Connect to the PostgreSQL database
-def connect_to_db():
-    conn = psycopg2.connect(
-        dbname="minecraftindex",
-        user="kyjohnso",
-        password="Password",
-        host='postgis',  # Use the service name from docker-compose.yml
-        port=5432
+def connect_to_db(db_config):
+    """
+    Establish a connection to the database using the provided configuration.
+
+    Args:
+        db_config (dict): Database configuration dictionary.
+
+    Returns:
+        psycopg2 connection: Database connection object.
+    """
+    return psycopg2.connect(
+        dbname=db_config["dbname"],
+        user=db_config["user"],
+        password=db_config["password"],
+        host=db_config["host"],
+        port=db_config["port"]
     )
-    return conn
 
 # Compute ECEF XYZ positions
 def compute_ecef_positions(satellites):
@@ -272,33 +282,34 @@ def insert_satellites(satellites, connection):
     cursor.close()
     logger.info("Satellite data inserted into the database.")
 
-def main():
+def load_config_from_yaml(file_path):
+    """Load configuration from a YAML file."""
+    with open(file_path, 'r') as file:
+        config = yaml.safe_load(file)
+    return config
+
+def main(config):
+    url = config["satellite"]["tle_url"]
+    hilbert_dict = config["hilbert"]
+
     # Load satellite data
-    sats = get_starlink_satellites()
+    sats = get_satellites(url)
 
     # Compute ECEF positions
     sats = compute_ecef_positions(sats)
 
-    # compute hilbert index
-    world_size = 80_000_000
-    cell_size= 10_000
-    
-    hilbert_dict = {
-        "world_size":world_size,
-        "cell_size":cell_size,
-        "n":3,
-    }
-    hilbert = ecef_points_to_hilbert(np.array([s["ecef"] for s in sats]),hilbert_dict)
-    sats = add_hilbert_to_satellites(sats,hilbert)
+    # Compute hilbert index
+    hilbert = ecef_points_to_hilbert(np.array([s["ecef"] for s in sats]), hilbert_dict)
+    sats = add_hilbert_to_satellites(sats, hilbert)
 
-    hilbert_ecef = hilbert_to_ecef_points(hilbert,hilbert_dict)
-    hilbert_points = [{"hilbert":hilbert[i],"ecef":hilbert_ecef[i]} for i in range(len(hilbert))]
+    hilbert_ecef = hilbert_to_ecef_points(hilbert, hilbert_dict)
+    hilbert_points = [{"hilbert": hilbert[i], "ecef": hilbert_ecef[i]} for i in range(len(hilbert))]
     
     # Connect to the database
-    conn = connect_to_db()
+    conn = connect_to_db(config["postgis"])
 
     # Insert hilbert index into the database
-    insert_hilbert_points(hilbert_points,conn)
+    insert_hilbert_points(hilbert_points, conn)
     
     # Insert data into the database
     insert_satellites(sats, conn)
@@ -307,7 +318,25 @@ def main():
     conn.close()
 
 
+
 if __name__ == "__main__":
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Process satellite data.")
+    parser.add_argument(
+        "--config", 
+        type=str, 
+        required=True, 
+        help="Path to the YAML configuration file."
+    )
+    args = parser.parse_args()
+
+    # Load configuration from YAML
+    config = load_config_from_yaml(args.config)
+
+    last_run_dt = datetime.datetime(2001,5,31).replace(tzinfo=datetime.UTC) # clint eastwoods birthday in 2001
     while True:
-        main()
-        time.sleep(10)
+        now = datetime.datetime.now(datetime.UTC)
+        if (now - last_run_dt).total_seconds() > config["satellite"]["query_interval_seconds"]:
+            logger.info("Running satellite data pipeline.")
+            main(config)
+            last_run_dt = now
