@@ -1,5 +1,5 @@
 
-# Minecraft Index for Satellite Locations
+# Hilbert Curve Index for Satellite Locations
 
 This repository explores the use of **Hilbert Curves** to index geospatial satellite locations, including applications for proximity queries and spatial clustering. The project applies these concepts to datasets such as Starlink satellite positions, offering tools for visualization and analysis.
 
